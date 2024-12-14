@@ -59,10 +59,6 @@ void server_process(const char *socket_path, int server_id) {
 
     // 무한루프로 클라이언트에게 값 수신
     while (1) {
-        if (clients_received == NUM_CLIENT) {
-            printf("서버 %d: 모든 클라이언트 데이터 수신 완료\n", server_id);
-            break;
-        }
 
         FD_ZERO(&read_fds);
         FD_SET(server_fd, &read_fds);
@@ -112,12 +108,17 @@ void server_process(const char *socket_path, int server_id) {
                 }
             }
         }
+
+        // if (clients_received == NUM_CLIENT) {
+        //     printf("서버 %d: 모든 클라이언트 데이터 수신 완료\n", server_id);
+        //     break;
+        // }
     } 
     //while루프 종료
 
     // 데이터 병합 및 저장
     char filename[30];
-    snprintf(filename, sizeof(filename), "bin/server%d_data.bin", server_id);
+    snprintf(filename, sizeof(filename), "bin/server/server%d_data.bin", server_id);
     int output_fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (output_fd < 0) {
         perror("파일 생성 실패");
