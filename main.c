@@ -17,11 +17,8 @@
 
 /* 서버i 프로세스 생성 함수 */
 void server_process(const char *socket_path, int server_id) {
-    int server_fd, client_fd[NUM_CLIENT], max_fd, activity, i, valread;
+    int server_fd, client_fd, client_count = 0;
     struct sockaddr_un server_addr;
-    fd_set read_fds;
-    int received_data[NUM_CLIENT][ROWS][COLS] = {0}; // 클라이언트별 수신 데이터
-    int clients_received = 0;                        // 데이터 수신 완료한 클라이언트 수
 
     // 소켓 생성
     server_fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -41,103 +38,59 @@ void server_process(const char *socket_path, int server_id) {
     // 소켓 바인드
     if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         perror("소켓 바인드 실패");
+        close(server_fd);
         exit(1);
     }
 
     // 소켓 대기
-    if (listen(server_fd, NUM_CLIENT) < 0) {
+    if (listen(server_fd, NUM_CLIENTS) < 0) {
         perror("소켓 대기 실패");
+        close(server_fd);
         exit(1);
     }
 
     printf("서버 %d: %s 에서 대기 중...\n", server_id, socket_path);
 
-    // 클라이언트 관리 배열 초기화
-    for (i = 0; i < NUM_CLIENT; i++) {
-        client_fd[i] = -1;
-    }
-
-    // 무한루프로 클라이언트에게 값 수신
-    while (1) {
-
-        FD_ZERO(&read_fds);
-        FD_SET(server_fd, &read_fds);
-        max_fd = server_fd;
-
-        // 클라이언트 소켓 추가
-        for (i = 0; i < NUM_CLIENT; i++) {
-            if (client_fd[i] > 0)
-                FD_SET(client_fd[i], &read_fds);
-            if (client_fd[i] > max_fd)
-                max_fd = client_fd[i];
+    while (client_count < NUM_CLIENTS) {
+        client_fd = accept(server_fd, NULL, NULL);
+        if (client_fd < 0) {
+            perror("클라이언트 연결 실패");
+            continue;
         }
 
-        // select 호출
-        activity = select(max_fd + 1, &read_fds, NULL, NULL, NULL);
-        if (activity < 0) {
-            perror("select 실패");
-            exit(1);
+        printf("서버 %d: 클라이언트 %d 연결 수락\n", server_id, client_count);
+
+        // 파일 저장 경로 설정
+        char filename[50];
+        snprintf(filename, sizeof(filename), "bin/server/server%d/client%d.bin", server_id, client_count);
+
+        int output_fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (output_fd < 0) {
+            perror("파일 생성 실패");
+            close(client_fd);
+            continue;
         }
 
-        // 새 클라이언트 연결 처리
-        if (FD_ISSET(server_fd, &read_fds)) { //서버에 이벤트가 발생헀는지 확인
-            int new_socket = accept(server_fd, NULL, NULL);
-            if (new_socket < 0) {
-                perror("accept 실패");
-                exit(1);
-            }
-
-            for (i = 0; i < NUM_CLIENT; i++) {
-                if (client_fd[i] == -1) {
-                    client_fd[i] = new_socket;
-                    printf("서버 %d: 클라이언트 %d 등록 완료\n", server_id, i);
-                    break;
-                }
+        // 데이터 수신 및 파일 저장
+        char buffer[BUFFER_SIZE];
+        int valread;
+        while ((valread = read(client_fd, buffer, BUFFER_SIZE)) > 0) {
+            if (write(output_fd, buffer, valread) != valread) {
+                perror("파일 쓰기 실패");
+                break;
             }
         }
 
-        // 기존 클라이언트 데이터 처리
-        for (i = 0; i < NUM_CLIENT; i++) {
-            if (client_fd[i] > 0 && FD_ISSET(client_fd[i], &read_fds)) {
-                valread = read(client_fd[i], received_data[i], sizeof(received_data[i]));
-                if (valread > 0) {
-                    printf("서버 %d: 클라이언트 %d로부터 데이터 수신 완료\n", server_id, i);
-                    clients_received++;
-                    close(client_fd[i]);
-                    client_fd[i] = -1;
-                }
-            }
-        }
+        close(output_fd);
+        close(client_fd);
+        printf("서버 %d: 클라이언트 %d 데이터 저장 완료 -> %s\n", server_id, client_count, filename);
 
-        // if (clients_received == NUM_CLIENT) {
-        //     printf("서버 %d: 모든 클라이언트 데이터 수신 완료\n", server_id);
-        //     break;
-        // }
-    } 
-    //while루프 종료
-
-    // 데이터 병합 및 저장
-    char filename[30];
-    snprintf(filename, sizeof(filename), "bin/server/server%d_data.bin", server_id);
-    int output_fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (output_fd < 0) {
-        perror("파일 생성 실패");
-        exit(1);
+        client_count++;
     }
-
-    for (i = 0; i < NUM_CLIENT; i++) {
-        if (write(output_fd, received_data[i], sizeof(received_data[i])) != sizeof(received_data[i])) {
-            perror("파일 쓰기 실패");
-            close(output_fd);
-            exit(1);
-        }
-    }
-
-    close(output_fd);
-    printf("서버 %d: 데이터 병합 완료 -> %s\n", server_id, filename);
 
     close(server_fd);
     unlink(socket_path);
+    printf("서버 %d: 모든 클라이언트 데이터 수신 완료\n", server_id);
     exit(0);
 }
 
