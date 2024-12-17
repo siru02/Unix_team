@@ -13,10 +13,10 @@ int main() {
     FILE *file;
     file = fopen("bin/data.bin", "w");
 
-    if(mkdir("socket", 0777) == -1){
-		perror("socket mkdir failed");
-		exit(1);
-	}
+    // if(mkdir("socket", 0777) == -1){
+	// 	perror("socket mkdir failed");
+	// 	exit(1);
+	// }
 
     if(access("bin/client", F_OK) == -1){
 		if(mkdir("bin/client", 0777) == -1){
