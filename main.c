@@ -14,7 +14,7 @@
 #define SERVER1_PATH "./socket/server1_socket"
 #define BUFFER_SIZE 4096
 #define NUM_CLIENT 4
-#define MAX_ELEMENTS (ROWS * COLS / NUM_CLIENTS)  // 각 클라이언트 파일의 최대 요소 수
+#define MAX_ELEMENTS (ROWS * COLS / NUM_CLIENTS)
 
 /* 정렬을 위한 비교 함수 */
 int compare(const void* a, const void* b) {
@@ -27,7 +27,7 @@ void server_process(const char *socket_path, int server_id) {
     struct sockaddr_un server_addr;
     int connected_clients = 0;
     fd_set active_fd_set, read_fd_set;
-    int *all_data = NULL;  // 모든 데이터를 저장할 배열
+    int *all_data = NULL;
     int total_elements = 0;
 
     // 데이터 저장을 위한 메모리 할당
@@ -92,37 +92,199 @@ void server_process(const char *socket_path, int server_id) {
 
         printf("서버 %d: 클라이언트 %d 연결 수락\n", server_id, connected_clients);
 
-        // 임시 파일 저장 경로 설정
-        char filename[50];
-        snprintf(filename, sizeof(filename), "bin/server/server%d/client%d.bin", server_id, connected_clients);
+        // 임시 파일 경로 구성 및 생성
+        char client_path[256];
+        if (server_id == 0) {
+            if (connected_clients == 0) {
+                int output_fd = open("bin/server/server0/client0.bin", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                if (output_fd < 0) {
+                    perror("파일 생성 실패");
+                    close(client_fd);
+                    continue;
+                }
+                // 데이터 수신 및 파일 저장
+                int buffer[BUFFER_SIZE/sizeof(int)];
+                ssize_t bytes_read;
 
-        int output_fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-        if (output_fd < 0) {
-            perror("파일 생성 실패");
-            close(client_fd);
-            continue;
+                while ((bytes_read = read(client_fd, buffer, BUFFER_SIZE)) > 0) {
+                    int nums = bytes_read / sizeof(int);
+                    memcpy(all_data + total_elements, buffer, bytes_read);
+                    total_elements += nums;
+                    
+                    if (write(output_fd, buffer, bytes_read) != bytes_read) {
+                        perror("파일 쓰기 실패");
+                        break;
+                    }
+                }
+                close(output_fd);
+            }
+            else if (connected_clients == 1) {
+                int output_fd = open("bin/server/server0/client1.bin", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                if (output_fd < 0) {
+                    perror("파일 생성 실패");
+                    close(client_fd);
+                    continue;
+                }
+                // 데이터 수신 및 파일 저장
+                int buffer[BUFFER_SIZE/sizeof(int)];
+                ssize_t bytes_read;
+
+                while ((bytes_read = read(client_fd, buffer, BUFFER_SIZE)) > 0) {
+                    int nums = bytes_read / sizeof(int);
+                    memcpy(all_data + total_elements, buffer, bytes_read);
+                    total_elements += nums;
+                    
+                    if (write(output_fd, buffer, bytes_read) != bytes_read) {
+                        perror("파일 쓰기 실패");
+                        break;
+                    }
+                }
+                close(output_fd);
+            }
+            else if (connected_clients == 2) {
+                int output_fd = open("bin/server/server0/client2.bin", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                if (output_fd < 0) {
+                    perror("파일 생성 실패");
+                    close(client_fd);
+                    continue;
+                }
+                // 데이터 수신 및 파일 저장
+                int buffer[BUFFER_SIZE/sizeof(int)];
+                ssize_t bytes_read;
+
+                while ((bytes_read = read(client_fd, buffer, BUFFER_SIZE)) > 0) {
+                    int nums = bytes_read / sizeof(int);
+                    memcpy(all_data + total_elements, buffer, bytes_read);
+                    total_elements += nums;
+                    
+                    if (write(output_fd, buffer, bytes_read) != bytes_read) {
+                        perror("파일 쓰기 실패");
+                        break;
+                    }
+                }
+                close(output_fd);
+            }
+            else {
+                int output_fd = open("bin/server/server0/client3.bin", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                if (output_fd < 0) {
+                    perror("파일 생성 실패");
+                    close(client_fd);
+                    continue;
+                }
+                // 데이터 수신 및 파일 저장
+                int buffer[BUFFER_SIZE/sizeof(int)];
+                ssize_t bytes_read;
+
+                while ((bytes_read = read(client_fd, buffer, BUFFER_SIZE)) > 0) {
+                    int nums = bytes_read / sizeof(int);
+                    memcpy(all_data + total_elements, buffer, bytes_read);
+                    total_elements += nums;
+                    
+                    if (write(output_fd, buffer, bytes_read) != bytes_read) {
+                        perror("파일 쓰기 실패");
+                        break;
+                    }
+                }
+                close(output_fd);
+            }
         }
+        else {
+            if (connected_clients == 0) {
+                int output_fd = open("bin/server/server1/client0.bin", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                if (output_fd < 0) {
+                    perror("파일 생성 실패");
+                    close(client_fd);
+                    continue;
+                }
+                // 데이터 수신 및 파일 저장
+                int buffer[BUFFER_SIZE/sizeof(int)];
+                ssize_t bytes_read;
 
-        // 데이터 수신 및 파일 저장
-        int elements_read = 0;
-        int buffer[BUFFER_SIZE/sizeof(int)];
-        ssize_t bytes_read;
+                while ((bytes_read = read(client_fd, buffer, BUFFER_SIZE)) > 0) {
+                    int nums = bytes_read / sizeof(int);
+                    memcpy(all_data + total_elements, buffer, bytes_read);
+                    total_elements += nums;
+                    
+                    if (write(output_fd, buffer, bytes_read) != bytes_read) {
+                        perror("파일 쓰기 실패");
+                        break;
+                    }
+                }
+                close(output_fd);
+            }
+            else if (connected_clients == 1) {
+                int output_fd = open("bin/server/server1/client1.bin", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                if (output_fd < 0) {
+                    perror("파일 생성 실패");
+                    close(client_fd);
+                    continue;
+                }
+                // 데이터 수신 및 파일 저장
+                int buffer[BUFFER_SIZE/sizeof(int)];
+                ssize_t bytes_read;
 
-        while ((bytes_read = read(client_fd, buffer, BUFFER_SIZE)) > 0) {
-            int nums = bytes_read / sizeof(int);
-            memcpy(all_data + total_elements, buffer, bytes_read);
-            total_elements += nums;
-            
-            if (write(output_fd, buffer, bytes_read) != bytes_read) {
-                perror("파일 쓰기 실패");
-                break;
+                while ((bytes_read = read(client_fd, buffer, BUFFER_SIZE)) > 0) {
+                    int nums = bytes_read / sizeof(int);
+                    memcpy(all_data + total_elements, buffer, bytes_read);
+                    total_elements += nums;
+                    
+                    if (write(output_fd, buffer, bytes_read) != bytes_read) {
+                        perror("파일 쓰기 실패");
+                        break;
+                    }
+                }
+                close(output_fd);
+            }
+            else if (connected_clients == 2) {
+                int output_fd = open("bin/server/server1/client2.bin", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                if (output_fd < 0) {
+                    perror("파일 생성 실패");
+                    close(client_fd);
+                    continue;
+                }
+                // 데이터 수신 및 파일 저장
+                int buffer[BUFFER_SIZE/sizeof(int)];
+                ssize_t bytes_read;
+
+                while ((bytes_read = read(client_fd, buffer, BUFFER_SIZE)) > 0) {
+                    int nums = bytes_read / sizeof(int);
+                    memcpy(all_data + total_elements, buffer, bytes_read);
+                    total_elements += nums;
+                    
+                    if (write(output_fd, buffer, bytes_read) != bytes_read) {
+                        perror("파일 쓰기 실패");
+                        break;
+                    }
+                }
+                close(output_fd);
+            }
+            else {
+                int output_fd = open("bin/server/server1/client3.bin", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                if (output_fd < 0) {
+                    perror("파일 생성 실패");
+                    close(client_fd);
+                    continue;
+                }
+                // 데이터 수신 및 파일 저장
+                int buffer[BUFFER_SIZE/sizeof(int)];
+                ssize_t bytes_read;
+
+                while ((bytes_read = read(client_fd, buffer, BUFFER_SIZE)) > 0) {
+                    int nums = bytes_read / sizeof(int);
+                    memcpy(all_data + total_elements, buffer, bytes_read);
+                    total_elements += nums;
+                    
+                    if (write(output_fd, buffer, bytes_read) != bytes_read) {
+                        perror("파일 쓰기 실패");
+                        break;
+                    }
+                }
+                close(output_fd);
             }
         }
 
-        close(output_fd);
         close(client_fd);
-        printf("서버 %d: 클라이언트 %d 데이터 저장 완료 -> %s\n", server_id, connected_clients, filename);
-
+        printf("서버 %d: 클라이언트 %d 데이터 저장 완료\n", server_id, connected_clients);
         connected_clients++;
     }
 
@@ -130,10 +292,13 @@ void server_process(const char *socket_path, int server_id) {
     qsort(all_data, total_elements, sizeof(int), compare);
 
     // 정렬된 데이터를 단일 파일에 저장
-    char final_filename[50];
-    snprintf(final_filename, sizeof(final_filename), "bin/server/server%d/server%d.bin", server_id, server_id);
-    
-    int final_fd = open(final_filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    int final_fd;
+    if (server_id == 0) {
+        final_fd = open("bin/server/server0/server0.bin", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    } else {
+        final_fd = open("bin/server/server1/server1.bin", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    }
+
     if (final_fd < 0) {
         perror("최종 파일 생성 실패");
         free(all_data);
@@ -151,7 +316,7 @@ void server_process(const char *socket_path, int server_id) {
     unlink(socket_path);
     free(all_data);
 
-    printf("서버 %d: 모든 데이터 정렬 및 저장 완료 -> %s\n", server_id, final_filename);
+    printf("서버 %d: 모든 데이터 정렬 및 저장 완료\n", server_id);
     exit(0);
 }
 
